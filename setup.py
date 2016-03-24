@@ -28,7 +28,10 @@ setup(
         'Programming Language :: Python',
     ],
     entry_points={
-        'console_scripts': ['signalflow=signalflowcli:main']
+        'console_scripts': [
+            'signalflow=signalflowcli:main',
+            'csv-to-plot=signalflowcli.graph:main',
+        ],
     },
     url='https://github.com/signalfx/signalflow-cli',
 )
