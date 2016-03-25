@@ -17,8 +17,8 @@ import os
 import pprint
 import readline
 import signalfx
-import tslib
 import sys
+import tslib
 
 from . import csvflow, graph, live
 from .tzaction import TimezoneAction
@@ -99,7 +99,7 @@ def prompt(flow, tz, params):
             live.stream(flow, tz, '\n'.join(program),
                         **process_params(**params))
         except Exception as e:
-            print(e)
+            print('Oops ;-( {}'.format(e))
 
     return 0
 
