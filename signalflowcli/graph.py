@@ -6,7 +6,6 @@
 from __future__ import print_function
 
 import argparse
-import matplotlib.pyplot as plt
 import pandas
 import six
 import StringIO
@@ -45,6 +44,8 @@ def render(csv, tz):
     print('    from: {0}'.format(df.index[0]))
     print('      to: {0}'.format(df.index[-1]))
 
+    # Import at the last minute to avoid the window focus switch bug.
+    import matplotlib.pyplot as plt
     plt.style.use('ggplot')
     df.plot()
     plt.show()
