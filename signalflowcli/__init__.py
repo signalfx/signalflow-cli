@@ -20,7 +20,7 @@ import signalfx
 import tslib
 import sys
 
-from . import csvflow, live
+from . import csvflow, graph, live
 from .tzaction import TimezoneAction
 
 
@@ -29,14 +29,10 @@ __email__ = 'info@signalfx.com'
 __copyright__ = 'Copyright (C) 2016 SignalFx, Inc. All rights reserved.'
 
 
-def _set_param(params, param, value=None):
-    if param not in params:
-        print('Unknown parameter {0} !'.format(param))
-        return
-    params[param] = value
-
-
-def _process_params(**kwargs):
+def process_params(**kwargs):
+    """Process the given parameters to expand relative, human-readable time
+    offsets into their absolute millisecond value or absolute millisecond
+    timestamp counterparts."""
     r = dict(kwargs)
     for k, v in r.items():
         if not v:
@@ -49,7 +45,7 @@ def _process_params(**kwargs):
     return r
 
 
-def _prompt(flow, tz, params):
+def prompt(flow, tz, params):
     print('\033[31;1m-*-\033[;0m '
           '\033[;1mSignalFx SignalFlow™ Analytics Console\033[;0m '
           '\033[31;1m-*-\033[;0m')
@@ -59,6 +55,12 @@ def _prompt(flow, tz, params):
     print('Enter your program and press ^D to execute. '
           'To stop streaming, or to exit, just press ^C.')
     print()
+
+    def set_param(param, value=None):
+        if param not in params:
+            print('Unknown parameter {0} !'.format(param))
+            return
+        params[param] = value
 
     # Setup the readline prompt.
     try:
@@ -84,7 +86,7 @@ def _prompt(flow, tz, params):
 
             if command.startswith('.'):
                 if len(command) > 1:
-                    _set_param(params, *command[1:].split(' ', 1))
+                    set_param(*command[1:].split(' ', 1))
                 pprint.pprint(params)
                 continue
 
@@ -95,7 +97,7 @@ def _prompt(flow, tz, params):
 
         try:
             live.stream(flow, tz, '\n'.join(program),
-                        **_process_params(**params))
+                        **process_params(**params))
         except Exception as e:
             print(e)
 
@@ -117,11 +119,17 @@ def main():
                         default=None,
                         help='stop timestamp or delta (default: infinity)')
     parser.add_argument('-r', '--resolution', metavar='RESOLUTION',
-                        default='1s',
-                        help='compute resolution (default: 1s)')
+                        default=None,
+                        help='compute resolution (default: auto)')
     parser.add_argument('-d', '--max-delay', metavar='MAX-DELAY',
                         default=None,
                         help='maximum data wait (default: auto)')
+    parser.add_argument('--output', choices=['live', 'csv', 'graph'],
+                        default='csv',
+                        help='output format for non-interactive mode')
+    parser.add_argument('program', nargs='?', type=file,
+                        default=sys.stdin,
+                        help='file to read program from (default: stdin)')
     TimezoneAction.add_to_parser(parser)
     options = parser.parse_args()
 
@@ -135,13 +143,20 @@ def main():
     sfx = signalfx.SignalFx(options.token,
                             api_endpoint=options.api_endpoint)
     flow = sfx.signalflow()
-
     try:
         if sys.stdin.isatty():
-            _prompt(flow, options.timezone, params)
+            prompt(flow, options.timezone, params)
         else:
-            map(print, csvflow.stream(flow, sys.stdin.read(),
-                                      **_process_params(**params)))
+            program = options.program.read()
+            params = process_params(**params)
+            if options.output == 'live':
+                live.stream(flow, options.timezone, program, **params)
+            else:
+                data = csvflow.stream(flow, program, **params)
+                if options.output == 'csv':
+                    map(print, data)
+                elif options.output == 'graph':
+                    graph.render(data, options.timezone)
     finally:
         flow.close()
         sfx.stop()

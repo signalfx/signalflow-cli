@@ -27,7 +27,7 @@ def render(csv, tz):
         buf = StringIO.StringIO(csv)
     if isinstance(csv, StringIO.StringIO):
         buf = csv
-    if callable(getattr(csv, 'read')):
+    if callable(getattr(csv, 'read', None)):
         buf = csv
     else:
         buf = StringIO.StringIO()
@@ -40,9 +40,10 @@ def render(csv, tz):
                          date_parser=tslib.parse_input)
     df = df.set_index(df.index.tz_convert(tz))
 
-    print('Computation complete; got {0} datapoints for {1} from {2} to {3}'
-          .format(len(df), df.index[-1] - df.index[0],
-                  df.index[0], df.index[-1]))
+    print('Computation complete; got {0} datapoints for {1}'
+          .format(len(df), df.index[-1] - df.index[0]))
+    print('    from: {0}'.format(df.index[0]))
+    print('      to: {0}'.format(df.index[-1]))
 
     plt.style.use('ggplot')
     df.plot()
