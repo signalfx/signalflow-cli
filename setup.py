@@ -29,7 +29,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'signalflow=signalflowcli:main',
+            'signalflow=signalflowcli.prompt:main',
             'csv-to-plot=signalflowcli.graph:main',
         ],
     },
