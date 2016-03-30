@@ -6,7 +6,9 @@
 from __future__ import print_function
 import tslib
 import signalfx
-import sys
+
+from . import utils
+
 
 _DATE_FORMAT = '%Y-%m-%d %H:%M:%S %Z%z'
 _TICKS = [' ', '▁', '▂', '▃', '▄', '▅', '▆', '▇', '█']
@@ -56,11 +58,7 @@ def stream(flow, tz, program, start, stop, resolution, max_delay):
 
         return ''.join(map(lambda v: _TICKS[to_tick_index(v)], spark))
 
-    def _output(message):
-        print(message, end='')
-        sys.stdout.flush()
-
-    _output('Requesting computation...')
+    utils.message('Requesting computation...')
     try:
         c = flow.execute(program, start=start, stop=stop,
                          resolution=resolution, max_delay=max_delay,
@@ -73,7 +71,7 @@ def stream(flow, tz, program, start, stop, resolution, max_delay):
             print('\033[31;1m{0}\033[;0m'.format(e.message))
         return
 
-    _output(' waiting for data...')
+    utils.message(' waiting for data...')
     try:
         for message in c.stream():
             if not isinstance(message, signalfx.signalflow.DataMessage):
@@ -102,7 +100,7 @@ def stream(flow, tz, program, start, stop, resolution, max_delay):
                 else:
                     print('{:>10s}'.format('-'))
 
-            _output('\r\033[{0}A'.format(len(sparks)+1))
+            utils.message('\r\033[{0}A'.format(len(sparks)+1))
     except KeyboardInterrupt:
         pass
     finally:

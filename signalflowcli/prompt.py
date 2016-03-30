@@ -13,15 +13,38 @@ from __future__ import print_function
 
 import argparse
 import atexit
+import getpass
 import os
 import pprint
 import readline
+import requests
 import signalfx
 import sys
 import tslib
 
-from . import csvflow, graph, live
+from . import csvflow, graph, live, utils
 from .tzaction import TimezoneAction
+
+
+def prompt_for_token(api_endpoint):
+    print('Please enter your credentials for {0}.'.format(api_endpoint))
+    print('To avoid having to login manually, use the --token option.')
+    print()
+    email = raw_input('Email: ')
+    password = getpass.getpass('Password: ')
+    try:
+        print()
+        utils.message('Logging in as {0}... '.format(email))
+        response = requests.post('{0}/v2/session'.format(api_endpoint),
+                                 json={'email': email, 'password': password})
+        response.raise_for_status()
+        token = response.json()['accessToken']
+        print('ok.')
+        print('Session token is \033[;1m{0}\033[;0m.'.format(token))
+        print()
+        return token
+    finally:
+        del password
 
 
 def process_params(**kwargs):
@@ -134,6 +157,22 @@ def main():
         'resolution': options.resolution,
         'max_delay': options.max_delay,
     }
+
+    token = options.token
+    if not token:
+        if not sys.stdin.isatty():
+            sys.stderr.write('Authentication token must be specified with '
+                             '--token for non-interactive mode!\n')
+            return 1
+
+        try:
+            token = prompt_for_token(options.api_endpoint)
+        except KeyboardInterrupt:
+            return 1
+        except Exception as e:
+            print('failed!')
+            print(e)
+            return 1
 
     sfx = signalfx.SignalFx(options.token,
                             api_endpoint=options.api_endpoint)

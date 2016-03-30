@@ -1,4 +1,5 @@
 pandas>=0.18.0
 matplotlib
+requests
 signalfx==0.4.0
 tslib==1.4

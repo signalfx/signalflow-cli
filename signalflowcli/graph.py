@@ -5,8 +5,6 @@
 
 from __future__ import print_function
 
-import argparse
-import pandas
 import six
 import StringIO
 import sys
@@ -34,6 +32,7 @@ def render(csv, tz):
             print(line, file=buf)
         buf.seek(0)
 
+    import pandas
     df = pandas.read_csv(buf, index_col=0,
                          parse_dates=True,
                          date_parser=tslib.parse_input)
@@ -52,6 +51,7 @@ def render(csv, tz):
 
 
 def main():
+    import argparse
     parser = argparse.ArgumentParser(
         description='Simple CSV data plotting utility')
     parser.add_argument('input', nargs='?', type=file, default=sys.stdin,
