@@ -40,7 +40,6 @@ def prompt_for_token(api_endpoint):
         response.raise_for_status()
         token = response.json()['accessToken']
         print('ok.')
-        print('Session token is \033[;1m{0}\033[;0m.'.format(token))
         print()
         return token
     finally:
@@ -126,10 +125,10 @@ def main():
     parser = argparse.ArgumentParser(
         description='SignalFlow Analytics interactive command-line client')
     parser.add_argument('-t', '--token', metavar='TOKEN',
-                        help='Your session token')
+                        help='session token')
     parser.add_argument('--api-endpoint', metavar='URL',
                         default='https://api.signalfx.com',
-                        help='Override the base API endpoint URL')
+                        help='override base API endpoint URL')
     parser.add_argument('-a', '--start', metavar='START',
                         default='-1m',
                         help='start timestamp or delta (default: -15m)')
@@ -158,6 +157,7 @@ def main():
         'max_delay': options.max_delay,
     }
 
+    # Ensure that we have a session token.
     token = options.token
     if not token:
         if not sys.stdin.isatty():
@@ -174,8 +174,7 @@ def main():
             print(e)
             return 1
 
-    sfx = signalfx.SignalFx(options.token,
-                            api_endpoint=options.api_endpoint)
+    sfx = signalfx.SignalFx(token, api_endpoint=options.api_endpoint)
     flow = sfx.signalflow()
     try:
         if sys.stdin.isatty():
