@@ -12,6 +12,12 @@ from . import utils
 
 _DATE_FORMAT = '%Y-%m-%d %H:%M:%S %Z%z'
 _TICKS = [' ', '▁', '▂', '▃', '▄', '▅', '▆', '▇', '█']
+_REPR_IGNORED_DIMENSIONS = set(['sf_metric',
+                                'sf_originatingMetric',
+                                'sf_eventType',
+                                'sf_originatingEventType',
+                                'jobId',
+                                'programId'])
 
 
 def stream(flow, tz, program, start, stop, resolution, max_delay):
@@ -58,6 +64,34 @@ def stream(flow, tz, program, start, stop, resolution, max_delay):
 
         return ''.join(map(lambda v: _TICKS[to_tick_index(v)], spark))
 
+    def _get_timeseries_repr(obj):
+        """Return a representation of a timeseries' identity usable for
+        display. If the timeseries type has a known fixed dimension, it is
+        promoted to the front of the representation."""
+        if not obj:
+            return None
+
+        result = []
+
+        if obj['sf_type'] == 'MetricTimeSeries':
+            candidates = ['sf_originatingMetric', 'sf_metric']
+        elif obj['sf_type'] == 'EventTimeSeries':
+            candidates = ['sf_originatingEventType', 'sf_eventType']
+
+        if candidates:
+            candidates.append('sf_streamLabel')
+            for c in candidates:
+                if c in obj and not obj[c].startswith('__SF_'):
+                    result.append(obj[c])
+                    break
+
+        key = filter(lambda k: k not in _REPR_IGNORED_DIMENSIONS,
+                     obj['sf_key'])
+        name = '.'.join(map(lambda k: obj[k], sorted(key)))
+        result.append(name)
+
+        return '/'.join(filter(None, result))
+
     utils.message('Requesting computation...')
     try:
         c = flow.execute(program, start=start, stop=stop,
@@ -71,9 +105,16 @@ def stream(flow, tz, program, start, stop, resolution, max_delay):
             print('\033[31;1m{0}\033[;0m'.format(e.message))
         return
 
-    utils.message(' waiting for data...')
     try:
         for message in c.stream():
+            if isinstance(message, signalflow.messages.JobStartMessage):
+                utils.message(' started; waiting for data...')
+                continue
+
+            if isinstance(message, signalflow.messages.JobProgressMessage):
+                utils.message(' {0}%'.format(message.progress))
+                continue
+
             if not isinstance(message, signalflow.messages.DataMessage):
                 continue
 
@@ -92,7 +133,7 @@ def stream(flow, tz, program, start, stop, resolution, max_delay):
 
             for tsid, spark in sparks.items():
                 print('\033[K\r{repr:<60}: [{spark:10s}] '
-                      .format(repr=c.get_timeseries_repr(tsid),
+                      .format(repr=_get_timeseries_repr(c.get_metadata(tsid)),
                               spark=_render_spark_line(spark)),
                       end='')
                 if spark[-1]:
