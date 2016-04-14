@@ -131,7 +131,7 @@ def main():
                         help='override base API endpoint URL')
     parser.add_argument('-a', '--start', metavar='START',
                         default='-1m',
-                        help='start timestamp or delta (default: -15m)')
+                        help='start timestamp or delta (default: -1m)')
     parser.add_argument('-o', '--stop', metavar='STOP',
                         default=None,
                         help='stop timestamp or delta (default: infinity)')
