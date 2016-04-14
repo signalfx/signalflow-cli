@@ -5,7 +5,7 @@
 
 from __future__ import print_function
 import tslib
-import signalfx
+from signalfx import signalflow
 
 from . import utils
 
@@ -63,7 +63,7 @@ def stream(flow, tz, program, start, stop, resolution, max_delay):
         c = flow.execute(program, start=start, stop=stop,
                          resolution=resolution, max_delay=max_delay,
                          persistent=False)
-    except signalfx.signalflow.ComputationExecutionError as e:
+    except signalflow.computation.ComputationExecutionError as e:
         if not e.message:
             print('failed ({0})!'.format(e.code))
         else:
@@ -74,7 +74,7 @@ def stream(flow, tz, program, start, stop, resolution, max_delay):
     utils.message(' waiting for data...')
     try:
         for message in c.stream():
-            if not isinstance(message, signalfx.signalflow.DataMessage):
+            if not isinstance(message, signalflow.messages.DataMessage):
                 continue
 
             ts = message.logical_timestamp_ms
