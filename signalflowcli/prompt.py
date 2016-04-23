@@ -115,6 +115,8 @@ def prompt(flow, tz, params):
         try:
             live.stream(flow, tz, '\n'.join(program),
                         **process_params(**params))
+        except signalfx.signalflow.computation.ComputationAborted as e:
+            print(e)
         except Exception as e:
             print('Oops ;-( {}'.format(e))
 
