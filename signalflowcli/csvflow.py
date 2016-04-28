@@ -6,8 +6,10 @@
 from __future__ import print_function
 
 import csv
-import signalfx
+from signalfx import signalflow
 import StringIO
+
+from . import utils
 
 
 def stream(flow, program, start, stop, resolution, max_delay):
@@ -44,13 +46,13 @@ def stream(flow, program, start, stop, resolution, max_delay):
     header = None
     try:
         for message in c.stream():
-            if not isinstance(message, signalfx.signalflow.DataMessage):
+            if not isinstance(message, signalflow.messages.DataMessage):
                 continue
 
             # At this point, metadata will be available
             if not header:
                 header = ['timestamp']
-                header.extend([c.get_timeseries_repr(tsid)
+                header.extend([utils.timeseries_repr(c.get_metadata(tsid))
                                for tsid in c.get_known_tsids()])
                 yield _emit(header)
 
