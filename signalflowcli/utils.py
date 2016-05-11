@@ -47,7 +47,7 @@ def timeseries_repr(obj):
         return None
 
     for c in candidates:
-        if c in obj and not obj[c].startswith('__SF_'):
+        if c in obj and not obj[c].lower().startswith('_sf_'):
             result.append(obj[c])
             break
 
