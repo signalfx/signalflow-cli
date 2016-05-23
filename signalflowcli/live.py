@@ -63,7 +63,7 @@ def stream(flow, tz, program, start, stop, resolution, max_delay):
         c = flow.execute(program, start=start, stop=stop,
                          resolution=resolution, max_delay=max_delay,
                          persistent=False)
-    except signalflow.computation.ComputationExecutionError as e:
+    except signalflow.errors.SignalFlowException as e:
         if not e.message:
             print('failed ({0})!'.format(e.code))
         else:
