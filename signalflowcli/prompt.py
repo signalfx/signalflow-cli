@@ -117,8 +117,6 @@ def prompt(flow, tz, params):
                         **process_params(**params))
         except signalfx.signalflow.errors.ComputationAborted as e:
             print(e)
-        except Exception as e:
-            print('Oops ;-( {}'.format(e))
 
     return 0
 

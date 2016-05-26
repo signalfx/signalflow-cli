@@ -58,7 +58,7 @@ def stream(flow, tz, program, start, stop, resolution, max_delay):
 
         return ''.join(map(lambda v: _TICKS[to_tick_index(v)], spark))
 
-    utils.message('Requesting computation...')
+    utils.message('Requesting computation... ')
     try:
         c = flow.execute(program, start=start, stop=stop,
                          resolution=resolution, max_delay=max_delay,
@@ -110,6 +110,8 @@ def stream(flow, tz, program, start, stop, resolution, max_delay):
             utils.message('\r\033[{0}A'.format(len(sparks)+1))
     except KeyboardInterrupt:
         pass
+    except Exception as e:
+        print('Oops ;-( {}'.format(e))
     finally:
         print('\033[{0}B'.format(len(sparks)+1))
         c.close()
