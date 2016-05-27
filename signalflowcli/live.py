@@ -50,7 +50,7 @@ def stream(flow, tz, program, start, stop, resolution, max_delay):
 
         def to_tick_index(v):
             if minimum == maximum:
-                return 5
+                return 3
             if not v:
                 return 0
             return 1 + int((len(_TICKS) - 2) * (v - minimum) /
