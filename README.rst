@@ -5,6 +5,9 @@ SignalFx SignalFlow™ Analytics interactive command-line
 allows for executing, controlling and streaming live output from SignalFlow
 Analytics computations, as well as batch non-streaming output.
 
+For more information on the SignalFlow analytics language, visit the SignalFx
+Developers documentation at https://developers.signalfx.com.
+
 Installation
 ------------
 
@@ -51,7 +54,7 @@ csv`` into ``csv-to-plot``:
 
 .. code::
 
-    $ signalflow --token <API token> --start=-15m --stop=-1m \
+    $ signalflow --token <session token> --start=-15m --stop=-1m \
         < program.txt | csv-to-plot
 
 Interactive mode usage
@@ -59,7 +62,7 @@ Interactive mode usage
 
 .. code::
 
-    $ signalflow --token <API token>
+    $ signalflow --token <session token>
 
 After a greeting header, you should see the prompt ``> ``. You can then enter a
 SignalFlow program (even across multiple lines) and press ``^D`` (Control-D) to
@@ -95,6 +98,8 @@ To reset a parameter to ``None`` (which usually means "auto"), use
 Obtaining your token
 --------------------
 
-To obtain an API token, simply authenticate against the SignalFx API's
-``/session`` endpoint as described in the API documentation:
-https://developers.signalfx.com/docs/session.
+To obtain a session token, simply authenticate against the SignalFx API's
+``/v2/session`` endpoint as described in the API documentation:
+https://developers.signalfx.com/docs/session. If you don't pass the ``--token``
+parameter, the SignalFlow CLI will prompt for your username and password and
+obtain a token for you.

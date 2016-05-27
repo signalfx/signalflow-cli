@@ -128,7 +128,10 @@ def main():
                         help='session token')
     parser.add_argument('--api-endpoint', metavar='URL',
                         default='https://api.signalfx.com',
-                        help='override base API endpoint URL')
+                        help='override API endpoint URL')
+    parser.add_argument('--stream-endpoint', metavar='URL',
+                        default='https://stream.signalfx.com',
+                        help='override stream endpoint URL')
     parser.add_argument('-a', '--start', metavar='START',
                         default='-1m',
                         help='start timestamp or delta (default: -1m)')
@@ -174,8 +177,9 @@ def main():
             print(e)
             return 1
 
-    sfx = signalfx.SignalFx(token, api_endpoint=options.api_endpoint)
-    flow = sfx.signalflow()
+    flow = signalfx.SignalFx(
+        api_endpoint=options.api_endpoint,
+        stream_endpoint=options.stream_endpoint).signalflow(token)
     try:
         if sys.stdin.isatty():
             prompt(flow, options.timezone, params)
@@ -192,7 +196,6 @@ def main():
                     graph.render(data, options.timezone)
     finally:
         flow.close()
-        sfx.stop()
 
     return 0
 
