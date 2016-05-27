@@ -102,8 +102,11 @@ def stream(flow, tz, program, start, stop, resolution, max_delay):
                       .format(repr=utils.timeseries_repr(c.get_metadata(tsid)),
                               spark=_render_spark_line(spark)),
                       end='')
-                if spark[-1]:
-                    print('\033[;1m{0:>10.2f}\033[;0m'.format(spark[-1]))
+                value = spark[-1]
+                if type(value) == int:
+                    print('\033[;1m{0:>10d}\033[;0m'.format(value))
+                elif type(value) == float:
+                    print('\033[;1m{0:>10.2f}\033[;0m'.format(value))
                 else:
                     print('{:>10s}'.format('-'))
 
