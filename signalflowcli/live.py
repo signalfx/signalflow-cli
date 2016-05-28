@@ -4,6 +4,7 @@
 # Copyright (C) 2016 SignalFx, Inc. All Rights Reserved.
 
 from __future__ import print_function
+from ansicolor import green, red, white
 import tslib
 from signalfx import signalflow
 
@@ -30,6 +31,7 @@ def stream(flow, tz, program, start, stop, resolution, max_delay):
     """
 
     sparks = {}
+    events = []
 
     def _add_to_spark(tsid, value):
         """Add the given value to a time series' sparkline."""
@@ -58,44 +60,19 @@ def stream(flow, tz, program, start, stop, resolution, max_delay):
 
         return ''.join(map(lambda v: _TICKS[to_tick_index(v)], spark))
 
-    utils.message('Requesting computation... ')
-    try:
-        c = flow.execute(program, start=start, stop=stop,
-                         resolution=resolution, max_delay=max_delay,
-                         persistent=False)
-    except signalflow.errors.SignalFlowException as e:
-        if not e.message:
-            print('failed ({0})!'.format(e.code))
-        else:
-            print('failed!')
-            print('\033[31;1m{0}\033[;0m'.format(e.message))
-        return
+    def _render(c):
+        """Render the data display. Starts by displaying the received data,
+        followed by the events."""
+        lines = 0
 
-    try:
-        for message in c.stream():
-            if isinstance(message, signalflow.messages.JobStartMessage):
-                utils.message(' started; waiting for data...')
-                continue
-
-            if isinstance(message, signalflow.messages.JobProgressMessage):
-                utils.message(' {0}%'.format(message.progress))
-                continue
-
-            if not isinstance(message, signalflow.messages.DataMessage):
-                continue
-
-            ts = message.logical_timestamp_ms
-            date = tslib.date_from_utc_ts(ts)
-            print('\033[K\rAt \033[;1m{0}\033[;0m (@{1}, Δ: {2}):'
-                  .format(date.astimezone(tz).strftime(_DATE_FORMAT),
-                          tslib.render_delta(c.resolution)
-                          if c.resolution else '-',
-                          tslib.render_delta_from_now(date)))
-
-            _tick_sparks()
-
-            for tsid, value in message.data.items():
-                _add_to_spark(tsid, value)
+        if c.last_logical_ts:
+            date = tslib.date_from_utc_ts(c.last_logical_ts)
+            print('\033[K\rAt {date} (@{resolution}, Δ: {lag}):'.format(
+                date=white(date.astimezone(tz).strftime(_DATE_FORMAT),
+                           bold=True),
+                resolution=tslib.render_delta(c.resolution)
+                if c.resolution else '-',
+                lag=tslib.render_delta_from_now(date)))
 
             for tsid, spark in sparks.items():
                 print('\033[K\r{repr:<60}: [{spark:10s}] '
@@ -110,11 +87,63 @@ def stream(flow, tz, program, start, stop, resolution, max_delay):
                 else:
                     print('{:>10s}'.format('-'))
 
-            utils.message('\r\033[{0}A'.format(len(sparks)+1))
-    except KeyboardInterrupt:
-        pass
+            lines += 1 + len(sparks)
+
+        if events:
+            print('\nEvents:')
+            for event in events:
+                date = tslib.date_from_utc_ts(event.timestamp_ms)
+                is_now = event.properties['is']
+                print(' {mark} {date} [{incident}]: {sources}'.format(
+                    mark=green('✓') if is_now == 'ok' else red('✗'),
+                    date=white(date.astimezone(tz).strftime(_DATE_FORMAT),
+                               bold=True),
+                    incident=event.properties['incidentId'],
+                    sources=event.properties['sources']))
+
+            lines += 2 + len(events)
+
+        utils.message('\r\033[{0}A'.format(lines))
+
+    utils.message('Requesting computation... ')
+    try:
+        c = flow.execute(program, start=start, stop=stop,
+                         resolution=resolution, max_delay=max_delay,
+                         persistent=False)
+    except signalflow.errors.SignalFlowException as e:
+        if not e.message:
+            print('failed ({0})!'.format(e.code))
+        else:
+            print('failed!')
+            print('\033[31;1m{0}\033[;0m'.format(e.message))
+        return
+
+    try:
+        try:
+            for message in c.stream():
+                if isinstance(message, signalflow.messages.JobStartMessage):
+                    utils.message(' started; waiting for data...')
+                    continue
+
+                if isinstance(message, signalflow.messages.JobProgressMessage):
+                    utils.message(' {0}%'.format(message.progress))
+                    continue
+
+                # Messages types below all trigger a re-render.
+                if isinstance(message, signalflow.messages.DataMessage):
+                    _tick_sparks()
+                    for tsid, value in message.data.items():
+                        _add_to_spark(tsid, value)
+                elif isinstance(message, signalflow.messages.EventMessage):
+                    if len(events) == 5:
+                        events.pop()
+                    events.insert(0, message)
+
+                _render(c)
+        except KeyboardInterrupt:
+            pass
+        finally:
+            print('\033[{0}B'.format(len(sparks) + len(events) + 2))
+            c.close()
     except Exception as e:
         print('Oops ;-( {}'.format(e))
-    finally:
-        print('\033[{0}B'.format(len(sparks)+1))
-        c.close()
