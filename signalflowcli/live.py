@@ -5,14 +5,147 @@
 
 from __future__ import print_function
 from ansicolor import green, red, white
+import json
 import tslib
 from signalfx import signalflow
 
 from . import utils
 
 
-_DATE_FORMAT = '%Y-%m-%d %H:%M:%S %Z%z'
-_TICKS = [' ', '▁', '▂', '▃', '▄', '▅', '▆', '▇', '█']
+class LiveOutputDisplay(object):
+
+    _DATE_FORMAT = '%Y-%m-%d %H:%M:%S %Z%z'
+    _TICKS = [' ', '▁', '▂', '▃', '▄', '▅', '▆', '▇', '█']
+    _LATEST_EVENTS_COUNT = 5
+
+    def __init__(self, computation, tz):
+        self._computation = computation
+        self._tz = tz
+
+        # Sparkline data
+        self._sparks = {}
+
+        # Latest events (up to _LATEST_EVENTS_COUNT)
+        self._events = []
+
+    def _add_to_spark(self, tsid, value):
+        """Add the given value to a time series' sparkline."""
+        if tsid not in self._sparks:
+            self._sparks[tsid] = [None] * 10
+        self._sparks[tsid][-1] = value
+
+    def _tick_sparks(self):
+        """Tick (advance) all sparklines."""
+        for tsid in self._sparks.keys():
+            self._sparks[tsid] = self._sparks[tsid][1:] + [None]
+
+    def _render_date(self, date):
+        return (date.astimezone(self._tz)
+                .strftime(LiveOutputDisplay._DATE_FORMAT))
+
+    def _render_spark_line(self, spark):
+        """Return a visual representation of a time series' sparkline."""
+        values = filter(None, spark)
+        maximum = max(values) if values else None
+        minimum = min(values) if values else None
+
+        def to_tick_index(v):
+            if minimum == maximum:
+                return 3
+            if not v:
+                return 0
+            return 1 + int((len(LiveOutputDisplay._TICKS) - 2) *
+                           (v - minimum) / (maximum - minimum))
+
+        return ''.join(map(
+            lambda v: LiveOutputDisplay._TICKS[to_tick_index(v)],
+            spark))
+
+    def _render_latest_data(self):
+        """Render the latest data with sparkline for each timeseries."""
+        date = tslib.date_from_utc_ts(self._computation.last_logical_ts)
+        print('\033[K\rAt {date} (@{resolution}, Δ: {lag}):'.format(
+            date=white(self._render_date(date), bold=True),
+            resolution=tslib.render_delta(self._computation.resolution)
+            if self._computation.resolution else '-',
+            lag=tslib.render_delta_from_now(date)))
+
+        for tsid, spark in self._sparks.items():
+            metadata = self._computation.get_metadata(tsid)
+            print('\033[K\r{repr:<60}: [{spark:10s}] '
+                  .format(repr=utils.timeseries_repr(metadata),
+                          spark=self._render_spark_line(spark)),
+                  end='')
+            value = spark[-1]
+            if type(value) == int:
+                print('\033[;1m{0:>10d}\033[;0m'.format(value))
+            elif type(value) == float:
+                print('\033[;1m{0:>10.2f}\033[;0m'.format(value))
+            else:
+                print('{:>10s}'.format('-'))
+
+        return len(self._sparks) + 1
+
+    def _render_latest_events(self):
+        """Render the latest events emitted by the computation."""
+        print('\nEvents:')
+
+        for event in self._events:
+            date = tslib.date_from_utc_ts(event.timestamp_ms)
+            is_now = event.properties['is']
+
+            sources = json.loads(event.properties.get('sources', '{}'))
+            values = json.loads(event.properties.get('inputValues', '{}'))
+
+            print(' {mark} {date} [{incident}]: {sources} | {values}'
+                  .format(mark=green('✓') if is_now == 'ok' else red('✗'),
+                          date=white(self._render_date(date), bold=True),
+                          incident=event.properties['incidentId'],
+                          sources=', '.join(['{0}: {1}'.format(white(k), v)
+                                             for k, v in sources.items()]),
+                          values=', '.join(['{0}={1}'.format(k, v)
+                                            for k, v in values.items()])))
+
+        return 2 + len(self._events)
+
+    def _render(self):
+        """Render the data display. Starts by displaying the received data,
+        followed by the events."""
+        lines = 0
+        if self._computation.last_logical_ts:
+            lines += self._render_latest_data()
+        if self._events:
+            lines += self._render_latest_events()
+        utils.message('\r\033[{0}A'.format(lines))
+
+    def stream(self):
+        try:
+            for message in self._computation.stream():
+                if isinstance(message, signalflow.messages.JobStartMessage):
+                    utils.message(' started; waiting for data...')
+                    continue
+
+                if isinstance(message, signalflow.messages.JobProgressMessage):
+                    utils.message(' {0}%'.format(message.progress))
+                    continue
+
+                # Messages types below all trigger a re-render.
+                if isinstance(message, signalflow.messages.DataMessage):
+                    self._tick_sparks()
+                    for tsid, value in message.data.items():
+                        self._add_to_spark(tsid, value)
+                elif isinstance(message, signalflow.messages.EventMessage):
+                    if len(self._events) == \
+                            LiveOutputDisplay._LATEST_EVENTS_COUNT:
+                        self._events.pop()
+                    self._events.insert(0, message)
+
+                self._render()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            print('\033[{0}B'.format(len(self._sparks)+len(self._events)+2))
+            self._computation.close()
 
 
 def stream(flow, tz, program, start, stop, resolution, max_delay):
@@ -29,82 +162,6 @@ def stream(flow, tz, program, start, stop, resolution, max_delay):
     :param max_delay: The desired maximum data wait, in milliseconds, or None
         for automatic.
     """
-
-    sparks = {}
-    events = []
-
-    def _add_to_spark(tsid, value):
-        """Add the given value to a time series' sparkline."""
-        if tsid not in sparks:
-            sparks[tsid] = [None] * 10
-        sparks[tsid][-1] = value
-
-    def _tick_sparks():
-        """Tick (advance) all sparklines."""
-        for tsid in sparks.keys():
-            sparks[tsid] = sparks[tsid][1:] + [None]
-
-    def _render_spark_line(spark):
-        """Return a visual representation of a time series' sparkline."""
-        values = filter(None, spark)
-        maximum = max(values) if values else None
-        minimum = min(values) if values else None
-
-        def to_tick_index(v):
-            if minimum == maximum:
-                return 3
-            if not v:
-                return 0
-            return 1 + int((len(_TICKS) - 2) * (v - minimum) /
-                           (maximum - minimum))
-
-        return ''.join(map(lambda v: _TICKS[to_tick_index(v)], spark))
-
-    def _render(c):
-        """Render the data display. Starts by displaying the received data,
-        followed by the events."""
-        lines = 0
-
-        if c.last_logical_ts:
-            date = tslib.date_from_utc_ts(c.last_logical_ts)
-            print('\033[K\rAt {date} (@{resolution}, Δ: {lag}):'.format(
-                date=white(date.astimezone(tz).strftime(_DATE_FORMAT),
-                           bold=True),
-                resolution=tslib.render_delta(c.resolution)
-                if c.resolution else '-',
-                lag=tslib.render_delta_from_now(date)))
-
-            for tsid, spark in sparks.items():
-                print('\033[K\r{repr:<60}: [{spark:10s}] '
-                      .format(repr=utils.timeseries_repr(c.get_metadata(tsid)),
-                              spark=_render_spark_line(spark)),
-                      end='')
-                value = spark[-1]
-                if type(value) == int:
-                    print('\033[;1m{0:>10d}\033[;0m'.format(value))
-                elif type(value) == float:
-                    print('\033[;1m{0:>10.2f}\033[;0m'.format(value))
-                else:
-                    print('{:>10s}'.format('-'))
-
-            lines += 1 + len(sparks)
-
-        if events:
-            print('\nEvents:')
-            for event in events:
-                date = tslib.date_from_utc_ts(event.timestamp_ms)
-                is_now = event.properties['is']
-                print(' {mark} {date} [{incident}]: {sources}'.format(
-                    mark=green('✓') if is_now == 'ok' else red('✗'),
-                    date=white(date.astimezone(tz).strftime(_DATE_FORMAT),
-                               bold=True),
-                    incident=event.properties['incidentId'],
-                    sources=event.properties['sources']))
-
-            lines += 2 + len(events)
-
-        utils.message('\r\033[{0}A'.format(lines))
-
     utils.message('Requesting computation... ')
     try:
         c = flow.execute(program, start=start, stop=stop,
@@ -119,31 +176,6 @@ def stream(flow, tz, program, start, stop, resolution, max_delay):
         return
 
     try:
-        try:
-            for message in c.stream():
-                if isinstance(message, signalflow.messages.JobStartMessage):
-                    utils.message(' started; waiting for data...')
-                    continue
-
-                if isinstance(message, signalflow.messages.JobProgressMessage):
-                    utils.message(' {0}%'.format(message.progress))
-                    continue
-
-                # Messages types below all trigger a re-render.
-                if isinstance(message, signalflow.messages.DataMessage):
-                    _tick_sparks()
-                    for tsid, value in message.data.items():
-                        _add_to_spark(tsid, value)
-                elif isinstance(message, signalflow.messages.EventMessage):
-                    if len(events) == 5:
-                        events.pop()
-                    events.insert(0, message)
-
-                _render(c)
-        except KeyboardInterrupt:
-            pass
-        finally:
-            print('\033[{0}B'.format(len(sparks) + len(events) + 2))
-            c.close()
+        LiveOutputDisplay(c, tz).stream()
     except Exception as e:
         print('Oops ;-( {}'.format(e))
