@@ -116,7 +116,7 @@ class LiveOutputDisplay(object):
             lines += self._render_latest_data()
         if self._events:
             lines += self._render_latest_events()
-        utils.message('\r\033[{0}A'.format(lines))
+        utils.message('\033[{0}A'.format(lines))
 
     def stream(self):
         try:
@@ -134,13 +134,13 @@ class LiveOutputDisplay(object):
                     self._tick_sparks()
                     for tsid, value in message.data.items():
                         self._add_to_spark(tsid, value)
+                    self._render()
                 elif isinstance(message, signalflow.messages.EventMessage):
                     if len(self._events) == \
                             LiveOutputDisplay._LATEST_EVENTS_COUNT:
                         self._events.pop()
                     self._events.insert(0, message)
-
-                self._render()
+                    self._render()
         except KeyboardInterrupt:
             pass
         finally:
