@@ -15,7 +15,7 @@ To install, along with the required dependencies, simply use ``pip``:
 
 .. code::
 
-    $ pip install --upgrade --user -e .
+    $ pip install git+https://github.com/signalfx/signalflow-cli
 
 Demo
 ----
