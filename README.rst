@@ -17,6 +17,14 @@ To install, along with the required dependencies, simply use ``pip``:
 
     $ pip install --upgrade --user -e .
 
+Demo
+----
+
+|demo|
+
+.. |demo| image:: https://asciinema.org/a/8g5vaxyjakol8onretxdqbfgv.png
+         :target: https://asciinema.org/a/8g5vaxyjakol8onretxdqbfgv
+
 Usage
 -----
 
