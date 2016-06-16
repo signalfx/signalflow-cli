@@ -8,6 +8,7 @@ from __future__ import print_function
 import csv
 from signalfx import signalflow
 import StringIO
+import sys
 
 from . import utils
 
@@ -28,6 +29,9 @@ def stream(flow, program, start, stop, resolution, max_delay):
     buf = StringIO.StringIO()
     writer = csv.writer(buf, dialect=csv.excel, quoting=csv.QUOTE_NONNUMERIC)
 
+    def _message(msg):
+        utils.message(msg, out=sys.stderr)
+
     def _emit(row):
         writer.writerow(row)
         line = buf.getvalue().strip()
@@ -36,16 +40,26 @@ def stream(flow, program, start, stop, resolution, max_delay):
         return line
 
     try:
+        _message('Requesting computation...')
         c = flow.execute(program, start=start, stop=stop,
                          resolution=resolution, max_delay=max_delay,
                          persistent=False)
     except Exception as e:
-        print(e)
+        _message('\r\033[K')
+        _message(e)
         return
 
     header = None
     try:
         for message in c.stream():
+            if isinstance(message, signalflow.messages.JobStartMessage):
+                _message(' started; waiting for data...')
+                continue
+
+            if isinstance(message, signalflow.messages.JobProgressMessage):
+                _message(' {0}%'.format(message.progress))
+                continue
+
             if not isinstance(message, signalflow.messages.DataMessage):
                 continue
 
@@ -54,6 +68,7 @@ def stream(flow, program, start, stop, resolution, max_delay):
                 header = ['timestamp']
                 header.extend([utils.timeseries_repr(c.get_metadata(tsid))
                                for tsid in c.get_known_tsids()])
+                _message('\n')
                 yield _emit(header)
 
             # Note: this assumes that membership of the job doesn't

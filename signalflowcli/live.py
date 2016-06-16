@@ -15,7 +15,7 @@ from . import utils
 class LiveOutputDisplay(object):
 
     _DATE_FORMAT = '%Y-%m-%d %H:%M:%S %Z%z'
-    _TICKS = [' ', '▁', '▂', '▃', '▄', '▅', '▆', '▇', '█']
+    _TICKS = [' ', '▁', '▂', '▃', '▅', '▆', '▇']
     _LATEST_EVENTS_COUNT = 5
 
     def __init__(self, computation, tz):

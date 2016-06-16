@@ -51,6 +51,7 @@ def process_params(**kwargs):
     offsets into their absolute millisecond value or absolute millisecond
     timestamp counterparts."""
     r = dict(kwargs)
+    del r['output']
     for k, v in r.items():
         if not v:
             continue
@@ -112,9 +113,21 @@ def prompt(flow, tz, params):
         if not program:
             break
 
+        program = '\n'.join(program)
+        exec_params = process_params(**params)
+        output = params.get('output') or 'live'
+
         try:
-            live.stream(flow, tz, '\n'.join(program),
-                        **process_params(**params))
+            if output == 'live':
+                live.stream(flow, tz, program, **exec_params)
+            elif output in ['csv', 'graph']:
+                data = csvflow.stream(flow, program, **exec_params)
+                if output == 'csv':
+                    map(print, data)
+                elif output == 'graph':
+                    graph.render(data, tz)
+            else:
+                print('Unknown output format {0}!'.format(output))
         except signalfx.signalflow.errors.ComputationAborted as e:
             print(e)
         except signalfx.signalflow.errors.ComputationFailed as e:
@@ -147,8 +160,8 @@ def main():
                         default=None,
                         help='maximum data wait (default: auto)')
     parser.add_argument('--output', choices=['live', 'csv', 'graph'],
-                        default='csv',
-                        help='output format for non-interactive mode')
+                        default='live',
+                        help='default output format')
     parser.add_argument('program', nargs='?', type=file,
                         default=sys.stdin,
                         help='file to read program from (default: stdin)')
@@ -160,6 +173,7 @@ def main():
         'stop': options.stop,
         'resolution': options.resolution,
         'max_delay': options.max_delay,
+        'output': options.output,
     }
 
     # Ensure that we have a session token.

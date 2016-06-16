@@ -31,13 +31,15 @@ Usage
 The ``signalflow`` command-line tool supports both interactive and
 non-interactive operation modes. In interactive mode, it offers a prompt that
 allows for setting computation parameters and executing SignalFlow programs
-while visualizing their streaming output in real-time. The display shows the
-live data, with a spark line of the last 10 values, for each received time
-series.
+while visualizing their streaming output in real-time. The default display
+shows the live data, with a spark line of the last 10 values, for each received
+time series. CSV output and graph output can also be optained by setting the
+`.output` parameter (see below "Interactive mode usage").
 
 In non-interactive mode, ``signalflow`` reads the SignalFlow program text
-(either from stdin or from a file) and can output the results in various
-formats as controlled by the ``--output`` command-line flag:
+(either from stdin or from a file) and outputs the results the format specified
+by the ``--output`` command-line flag. By default, this uses the same live data
+display as the interactive prompt. The available output modes are:
 
 - ``csv``; outputs the data in CSV format. The first column is a millisecond
   timestamp; other columns contain the value of each output time series for
@@ -45,8 +47,6 @@ formats as controlled by the ``--output`` command-line flag:
 
   This output will keep streaming unless a fixed stopped time has been
   specified (which can be either in the past or in the future).
-
-  CSV output is the default output type for non-interactive mode.
 
 - ``graph``; generates CSV data and renders it as a graph in a window.
 
@@ -63,7 +63,9 @@ csv`` into ``csv-to-plot``:
 .. code::
 
     $ signalflow --token <session token> --start=-15m --stop=-1m \
-        < program.txt | csv-to-plot
+        --output=graph < program.txt
+    $ signalflow --token <session token> --start=-15m --stop=-1m \
+        --output=csv < program.txt | csv-to-plot
 
 Interactive mode usage
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -82,7 +84,11 @@ Computation parameters can be listed with the ``.`` command:
 .. code::
 
     > .
-    {'max_delay': None, 'resolution': None, 'start': '-1m', 'stop': None}
+    {'max_delay': None,
+     'output': 'live',
+     'resolution': None,
+     'start': '-1m',
+     'stop': None}
 
 You can change one of those values with ``.<parameter> <value>``:
 
@@ -91,7 +97,11 @@ You can change one of those values with ``.<parameter> <value>``:
     > .start -15m
     > .stop -1m
     > .
-   {'max_delay': None, 'resolution': None, 'start': '-15m', 'stop': '-1m'}
+    {'max_delay': None,
+     'output': 'live',
+     'resolution': None,
+     'start': '-15m',
+     'stop': '-1m'}
 
 To reset a parameter to ``None`` (which usually means "auto"), use
 ``.<parameter>``:
@@ -100,7 +110,11 @@ To reset a parameter to ``None`` (which usually means "auto"), use
 
     > .stop
     > .
-   {'max_delay': None, 'resolution': None, 'start': '-15m', 'stop': None}
+    {'max_delay': None,
+     'output': 'live',
+     'resolution': None,
+     'start': '-15m',
+     'stop': None}
 
 
 Obtaining your token

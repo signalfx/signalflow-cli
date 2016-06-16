@@ -15,11 +15,11 @@ _REPR_IGNORED_DIMENSIONS = set(['sf_metric',
                                 'programId'])
 
 
-def message(s):
+def message(s, out=sys.stdout):
     """Display the given message string with no new line and flush
     immediately."""
-    print(s, end='')
-    sys.stdout.flush()
+    out.write(s)
+    out.flush()
 
 
 def timeseries_repr(obj):
