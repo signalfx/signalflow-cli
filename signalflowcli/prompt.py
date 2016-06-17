@@ -114,6 +114,12 @@ def prompt(flow, tz, params):
             break
 
         program = '\n'.join(program)
+        if program.startswith('!'):
+            filename = program[1:].strip()
+            with open(filename) as f:
+                program = f.read()
+            print('Executing program from {0}:'.format(filename))
+            print(program)
         exec_params = process_params(**params)
         output = params.get('output') or 'live'
 
