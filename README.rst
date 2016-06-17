@@ -62,20 +62,23 @@ csv`` into ``csv-to-plot``:
 
 .. code::
 
-    $ signalflow --token <session token> --start=-15m --stop=-1m \
-        --output=graph < program.txt
-    $ signalflow --token <session token> --start=-15m --stop=-1m \
-        --output=csv < program.txt | csv-to-plot
+    $ signalflow --start=-15m --stop=-1m --output=graph < program.txt
+    $ signalflow --start=-15m --stop=-1m --output=csv < program.txt | csv-to-plot
 
 Interactive mode usage
 ^^^^^^^^^^^^^^^^^^^^^^
 
 .. code::
 
-    $ signalflow --token <session token>
+    $ signalflow
 
-After a greeting header, you should see the prompt ``> ``. You can then enter a
-SignalFlow program (even across multiple lines) and press ``^D`` (Control-D) to
+The client will first ask you to enter your SignalFx credentials to obtain a
+session token. If you want to avoid this everytime you use the client, write
+your session token in `~/.sftoken`. See "Obtaining your token" below for
+details.
+
+After a greeting header, you should see the prompt ``-> ``. You can then enter
+a SignalFlow program (even across multiple lines) and press ``<Esc><Enter>`` to
 execute the program and visualize the results. Press ``^C`` at any time to
 interrupt the stream, and again to exit the client.
 
@@ -83,7 +86,7 @@ Computation parameters can be listed with the ``.`` command:
 
 .. code::
 
-    > .
+    -> .
     {'max_delay': None,
      'output': 'live',
      'resolution': None,
@@ -94,9 +97,9 @@ You can change one of those values with ``.<parameter> <value>``:
 
 .. code::
 
-    > .start -15m
-    > .stop -1m
-    > .
+    -> .start -15m
+    -> .stop -1m
+    -> .
     {'max_delay': None,
      'output': 'live',
      'resolution': None,
@@ -108,20 +111,34 @@ To reset a parameter to ``None`` (which usually means "auto"), use
 
 .. code::
 
-    > .stop
-    > .
+    -> .stop
+    -> .
     {'max_delay': None,
      'output': 'live',
      'resolution': None,
      'start': '-15m',
      'stop': None}
 
+Shebang
+^^^^^^^
+
+When calling the client with the ``-x`` flag, the client will read the given
+file as the input program and execute it directly. This allows for writing
+self-executable SignalFlow files that use a shebang to execute using the
+SignalFlow CLI client:
+
+.. code::
+
+    #!signalflow -x
+    data('cpu.utilization').mean().publish()
 
 Obtaining your token
 --------------------
 
 To obtain a session token, simply authenticate against the SignalFx API's
 ``/v2/session`` endpoint as described in the API documentation:
-https://developers.signalfx.com/docs/session. If you don't pass the ``--token``
-parameter, the SignalFlow CLI will prompt for your username and password and
-obtain a token for you.
+https://developers.signalfx.com/docs/session. Place the value of the
+`sf_accessToken` field in a file named `.sftoken` in your home directory. If
+you don't have this file, or don't use the ``--token`` parameter, the
+SignalFlow CLI will prompt for your username and password and obtain a token
+for you.
