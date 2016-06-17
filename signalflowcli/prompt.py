@@ -11,12 +11,14 @@ SignalFlow Analytics.
 
 from __future__ import print_function
 
+from ansicolor import red, white
 import argparse
-import atexit
 import getpass
 import os
 import pprint
-import readline
+import prompt_toolkit
+import pygments
+import pygments_signalflow
 import requests
 import signalfx
 import sys
@@ -24,6 +26,10 @@ import tslib
 
 from . import csvflow, graph, live, utils
 from .tzaction import TimezoneAction
+
+# Default search location for a SignalFx session token file.
+# Used if no token was provided with the --token option.
+_DEFAULT_TOKEN_FILE = '~/.sftoken'
 
 
 def prompt_for_token(api_endpoint):
@@ -46,6 +52,35 @@ def prompt_for_token(api_endpoint):
         del password
 
 
+def find_session_token(options):
+    # Obviously, if a token was provided, use it.
+    if options.token:
+        return options.token
+
+    # Otherwise, try to load a token from _DEFAULT_TOKEN_FILE.
+    try:
+        with open(os.path.expanduser(_DEFAULT_TOKEN_FILE)) as f:
+            return f.read()
+    except:
+        pass
+
+    # If we still don't have a token, we need to prompt the user, but only if
+    # we have a tty.
+    if not sys.stdin.isatty():
+        sys.stderr.write('Authentication token must be specified with '
+                         '--token for non-interactive mode!\n')
+        return None
+
+    try:
+        return prompt_for_token(options.api_endpoint)
+    except KeyboardInterrupt:
+        return None
+    except Exception as e:
+        print('failed!')
+        print(e)
+        return None
+
+
 def process_params(**kwargs):
     """Process the given parameters to expand relative, human-readable time
     offsets into their absolute millisecond value or absolute millisecond
@@ -64,14 +99,15 @@ def process_params(**kwargs):
 
 
 def prompt(flow, tz, params):
-    print('\033[31;1m-*-\033[;0m '
-          '\033[;1mSignalFx SignalFlow™ Analytics Console\033[;0m '
-          '\033[31;1m-*-\033[;0m')
+    print(red('-*-', bold=True) + ' ' +
+          white('SignalFx SignalFlow™ Analytics Console', bold=True) + ' ' +
+          red('-*-', bold=True))
     print()
+    print(white('Enter your program and press <Esc><Enter> to execute.'))
+    print('SignalFlow programs may span multiple lines.')
     print('Set parameters with ".<param> <value>"; '
           'see current settings with "."')
-    print('Enter your program and press ^D to execute. '
-          'To stop streaming, or to exit, just press ^C.')
+    print('To stop streaming, or to exit, just press ^C.')
     print()
 
     def set_param(param, value=None):
@@ -80,40 +116,34 @@ def prompt(flow, tz, params):
             return
         params[param] = value
 
-    # Setup the readline prompt.
-    try:
-        histfile = os.path.join(os.path.dirname(__file__),
-                                '..', '.signalflow.history')
-        atexit.register(readline.write_history_file, histfile)
-        readline.parse_and_bind('tab: complete')
-        readline.read_history_file(histfile)
-    except IOError:
-        pass
+    history = prompt_toolkit.history.FileHistory(
+            os.path.expanduser('~/.signalflow.history'))
 
     while True:
         program = []
-        while True:
-            try:
-                command = raw_input('> ').strip()
-            except (KeyboardInterrupt, EOFError):
-                print()
-                break
-
-            if not command:
-                continue
-
-            if command.startswith('.'):
-                if len(command) > 1:
-                    set_param(*command[1:].split(' ', 1))
-                pprint.pprint(params)
-                continue
-
-            program.append(command)
-
-        if not program:
+        try:
+            prompt_args = {
+                'lexer': prompt_toolkit.layout.lexers.PygmentsLexer(
+                    pygments_signalflow.SignalFlowLexer),
+                'history': history,
+                'auto_suggest':
+                    prompt_toolkit.auto_suggest.AutoSuggestFromHistory(),
+                'get_continuation_tokens':
+                    lambda c, w: [(pygments.token.Token, '>>')],
+                'multiline': True,
+            }
+            program = prompt_toolkit.shortcuts.prompt(
+                    u'-> ', **prompt_args).strip()
+        except (KeyboardInterrupt, EOFError):
+            print()
             break
 
-        program = '\n'.join(program)
+        if program.startswith('.'):
+            if len(program) > 1:
+                set_param(*program[1:].split(' ', 1))
+            pprint.pprint(params)
+            continue
+
         if program.startswith('!'):
             filename = program[1:].strip()
             with open(filename) as f:
@@ -147,6 +177,8 @@ def main():
         description='SignalFlow Analytics interactive command-line client')
     parser.add_argument('-t', '--token', metavar='TOKEN',
                         help='session token')
+    parser.add_argument('-x', '--execute', action='store_true',
+                        help='force non-interactive mode')
     parser.add_argument('--api-endpoint', metavar='URL',
                         default='https://api.signalfx.com',
                         help='override API endpoint URL')
@@ -183,27 +215,16 @@ def main():
     }
 
     # Ensure that we have a session token.
-    token = options.token
+    token = find_session_token(options)
     if not token:
-        if not sys.stdin.isatty():
-            sys.stderr.write('Authentication token must be specified with '
-                             '--token for non-interactive mode!\n')
-            return 1
-
-        try:
-            token = prompt_for_token(options.api_endpoint)
-        except KeyboardInterrupt:
-            return 1
-        except Exception as e:
-            print('failed!')
-            print(e)
-            return 1
+        sys.stderr.write('No authentication token found.\n')
+        return 1
 
     flow = signalfx.SignalFx(
         api_endpoint=options.api_endpoint,
         stream_endpoint=options.stream_endpoint).signalflow(token)
     try:
-        if sys.stdin.isatty():
+        if sys.stdin.isatty() and not options.execute:
             prompt(flow, options.timezone, params)
         else:
             program = options.program.read()
