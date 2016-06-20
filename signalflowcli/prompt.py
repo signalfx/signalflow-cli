@@ -138,16 +138,25 @@ def prompt(flow, tz, params):
             print()
             break
 
+        if not program:
+            continue
+
+        # Parameter access and changes
         if program.startswith('.'):
             if len(program) > 1:
                 set_param(*program[1:].split(' ', 1))
             pprint.pprint(params)
             continue
 
+        # Execute from file
         if program.startswith('!'):
             filename = program[1:].strip()
-            with open(filename) as f:
-                program = f.read()
+            try:
+                with open(filename) as f:
+                    program = f.read()
+            except:
+                print('Cannot read program from {0}!'.format(filename))
+                continue
             print('Executing program from {0}:'.format(filename))
             print(program)
         exec_params = process_params(**params)
