@@ -17,6 +17,7 @@ import getpass
 import os
 import pprint
 import prompt_toolkit
+import prompt_toolkit.contrib.completers
 import pygments
 import pygments_signalflow
 import requests
@@ -30,6 +31,36 @@ from .tzaction import TimezoneAction
 # Default search location for a SignalFx session token file.
 # Used if no token was provided with the --token option.
 _DEFAULT_TOKEN_FILE = '~/.sftoken'
+
+
+class OptionCompleter(prompt_toolkit.completion.Completer):
+
+    OPTS = ['start', 'stop', 'resolution', 'max_delay', 'output']
+
+    def get_completions(self, document, complete_event):
+        for opt in self.OPTS:
+            if opt.startswith(document.text_before_cursor):
+                yield prompt_toolkit.completion.Completion(
+                        opt, start_position=-document.cursor_position)
+
+
+class PromptCompleter(prompt_toolkit.completion.Completer):
+
+    fs_completer = prompt_toolkit.contrib.completers.PathCompleter()
+    opt_completer = OptionCompleter()
+
+    def _offset(self, document, offset=1):
+        return prompt_toolkit.document.Document(
+                document.text[offset:], document.cursor_position - offset)
+
+    def get_completions(self, document, complete_event):
+        if document.text.startswith('!'):
+            return self.fs_completer.get_completions(
+                    self._offset(document), complete_event)
+        elif document.text.startswith('.'):
+            return self.opt_completer.get_completions(
+                    self._offset(document), complete_event)
+        return []
 
 
 def prompt_for_token(api_endpoint):
@@ -130,6 +161,7 @@ def prompt(flow, tz, params):
                     prompt_toolkit.auto_suggest.AutoSuggestFromHistory(),
                 'get_continuation_tokens':
                     lambda c, w: [(pygments.token.Token, '>>')],
+                'completer': PromptCompleter(),
                 'multiline': True,
             }
             program = prompt_toolkit.shortcuts.prompt(
