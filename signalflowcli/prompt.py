@@ -91,7 +91,7 @@ def find_session_token(options):
     # Otherwise, try to load a token from _DEFAULT_TOKEN_FILE.
     try:
         with open(os.path.expanduser(_DEFAULT_TOKEN_FILE)) as f:
-            return f.read()
+            return f.read().strip()
     except:
         pass
 
