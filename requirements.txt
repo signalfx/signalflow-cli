@@ -4,6 +4,6 @@ matplotlib
 requests
 prompt_toolkit
 pygments
-pygments-signalflow
-signalfx>=1.0.0
-tslib==1.4
+pygments-signalflow>=0.3
+signalfx>=1.0.5
+tslib>=1.5.1

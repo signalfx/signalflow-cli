@@ -6,7 +6,6 @@
 from __future__ import print_function
 
 import six
-import StringIO
 import sys
 import tslib
 
@@ -21,13 +20,13 @@ def render(csv, tz):
     :param tz: The display timezone for the time axis.
     """
     if isinstance(csv, six.string_types):
-        buf = StringIO.StringIO(csv)
-    if isinstance(csv, StringIO.StringIO):
+        buf = six.stringio.StringIO(csv)
+    if isinstance(csv, six.stringio.StringIO):
         buf = csv
     if callable(getattr(csv, 'read', None)):
         buf = csv
     else:
-        buf = StringIO.StringIO()
+        buf = six.stringio.StringIO()
         for line in csv:
             print(line, file=buf)
         buf.seek(0)

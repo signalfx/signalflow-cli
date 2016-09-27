@@ -241,7 +241,7 @@ def main():
     parser.add_argument('--output', choices=['live', 'csv', 'graph'],
                         default='live',
                         help='default output format')
-    parser.add_argument('program', nargs='?', type=file,
+    parser.add_argument('program', nargs='?', type=argparse.FileType('r'),
                         default=sys.stdin,
                         help='file to read program from (default: stdin)')
     TimezoneAction.add_to_parser(parser)
