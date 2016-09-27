@@ -38,13 +38,14 @@ def timeseries_repr(obj):
 
     result = []
 
-    if obj['sf_type'] == 'MetricTimeSeries':
+    obj_type = obj.get('sf_type')
+    if obj_type == 'MetricTimeSeries':
         candidates = ['sf_metric', 'sf_originatingMetric']
-    elif obj['sf_type'] == 'EventTimeSeries':
+    elif obj_type == 'EventTimeSeries':
         candidates = ['sf_eventType', 'sf_originatingEventType']
     else:
         # We should not be seeing any other metadata object types.
-        return None
+        raise ValueError('Unknown metadata object of type {}'.format(obj_type))
 
     for c in candidates:
         if c in obj and not obj[c].lower().startswith('_sf_'):

@@ -4,7 +4,8 @@
 
 from setuptools import setup, find_packages
 
-execfile('signalflowcli/version.py')
+with open('signalflowcli/version.py') as f:
+    exec(f.read())
 
 with open('README.rst') as readme:
     long_description = readme.read()

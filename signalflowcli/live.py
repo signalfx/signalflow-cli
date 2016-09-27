@@ -45,7 +45,7 @@ class LiveOutputDisplay(object):
 
     def _render_spark_line(self, spark):
         """Return a visual representation of a time series' sparkline."""
-        values = filter(None, spark)
+        values = list(filter(None, spark))
         maximum = max(values) if values else None
         minimum = min(values) if values else None
 
@@ -73,7 +73,7 @@ class LiveOutputDisplay(object):
         for tsid, spark in self._sparks.items():
             metadata = self._computation.get_metadata(tsid)
             print('\033[K\r{repr:<60}: [{spark:10s}] '
-                  .format(repr=utils.timeseries_repr(metadata),
+                  .format(repr=utils.timeseries_repr(metadata) or '',
                           spark=self._render_spark_line(spark)),
                   end='')
             value = spark[-1]
