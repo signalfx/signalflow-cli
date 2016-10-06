@@ -8,6 +8,10 @@ Analytics computations, as well as batch non-streaming output.
 For more information on the SignalFlow analytics language, visit the SignalFx
 Developers documentation at https://developers.signalfx.com.
 
+Note: The ``signalflow`` CLI is not an officially supported tool. It is
+intended to be an example of how to use the SignalFlow analytics language part 
+of the ``signalfx-python`` library.
+
 Installation
 ------------
 
