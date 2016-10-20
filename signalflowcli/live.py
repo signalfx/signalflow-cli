@@ -8,6 +8,7 @@ from ansicolor import green, red, white
 import json
 import tslib
 from signalfx import signalflow
+import six
 
 from . import utils
 
@@ -87,24 +88,41 @@ class LiveOutputDisplay(object):
         return len(self._sparks) + 1
 
     def _render_latest_events(self):
-        """Render the latest events emitted by the computation."""
+        """Render the latest events emitted by the computation.
+
+        TODO(mpetazzoni): render custom events/alert events differently and
+        support alert event schema v3.
+        """
         print('\nEvents:')
 
+        def maybe_json(v):
+            if isinstance(v, six.string_types):
+                return json.loads(v)
+            return v
+
         for event in self._events:
+            ets = self._computation.get_metadata(event.tsid)
+            contexts = json.loads(ets.get('sf_detectInputContexts', '{}'))
+
+            sources = maybe_json(event.properties.get('inputSources', '{}'))
+            sources = ', '.join([
+                '{0}: {1}'.format(white(contexts[k].get('identifier', k)), v)
+                for k, v in sources.items()])
+
+            values = maybe_json(event.properties.get('inputValues', '{}'))
+            values = ', '.join([
+                '{0}={1}'.format(contexts[k].get('identifier', k), v)
+                for k, v in values.items()])
+
             date = tslib.date_from_utc_ts(event.timestamp_ms)
             is_now = event.properties['is']
-
-            sources = json.loads(event.properties.get('sources', '{}'))
-            values = json.loads(event.properties.get('inputValues', '{}'))
 
             print(' {mark} {date} [{incident}]: {sources} | {values}'
                   .format(mark=green('✓') if is_now == 'ok' else red('✗'),
                           date=white(self._render_date(date), bold=True),
                           incident=event.properties['incidentId'],
-                          sources=', '.join(['{0}: {1}'.format(white(k), v)
-                                             for k, v in sources.items()]),
-                          values=', '.join(['{0}={1}'.format(k, v)
-                                            for k, v in values.items()])))
+                          sources=sources,
+                          values=values))
 
         return 2 + len(self._events)
 
