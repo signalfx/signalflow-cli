@@ -7,11 +7,14 @@ from __future__ import print_function
 
 import csv
 from signalfx import signalflow
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
 import sys
+if sys.version_info > (2,):
+    from io import String()
+else:
+    try:
+        from cStringIO import StringIO
+    except ImportError:
+        from StringIO import StringIO
 
 from . import utils
 
