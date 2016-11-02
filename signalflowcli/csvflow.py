@@ -7,7 +7,10 @@ from __future__ import print_function
 
 import csv
 from signalfx import signalflow
-import six
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 import sys
 
 from . import utils
@@ -26,7 +29,7 @@ def stream(flow, program, start, stop, resolution, max_delay):
         for automatic.
     """
 
-    buf = six.stringio.StringIO()
+    buf = StringIO()
     writer = csv.writer(buf, dialect=csv.excel, quoting=csv.QUOTE_NONNUMERIC)
 
     def _message(msg):
