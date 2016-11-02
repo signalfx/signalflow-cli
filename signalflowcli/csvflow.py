@@ -26,7 +26,7 @@ def stream(flow, program, start, stop, resolution, max_delay):
         for automatic.
     """
 
-    buf = six.stringio.StringIO()
+    buf = six.StringIO()
     writer = csv.writer(buf, dialect=csv.excel, quoting=csv.QUOTE_NONNUMERIC)
 
     def _message(msg):

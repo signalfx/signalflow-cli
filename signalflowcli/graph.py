@@ -20,13 +20,13 @@ def render(csv, tz):
     :param tz: The display timezone for the time axis.
     """
     if isinstance(csv, six.string_types):
-        buf = six.stringio.StringIO(csv)
-    if isinstance(csv, six.stringio.StringIO):
+        buf = six.StringIO(csv)
+    if isinstance(csv, six.StringIO):
         buf = csv
     if callable(getattr(csv, 'read', None)):
         buf = csv
     else:
-        buf = six.stringio.StringIO()
+        buf = six.StringIO()
         for line in csv:
             print(line, file=buf)
         buf.seek(0)
