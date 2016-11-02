@@ -18,7 +18,7 @@ _REPR_IGNORED_DIMENSIONS = set(['sf_metric',
 def message(s, out=sys.stdout):
     """Display the given message string with no new line and flush
     immediately."""
-    out.write(s)
+    out.write(str(s))
     out.flush()
 
 
