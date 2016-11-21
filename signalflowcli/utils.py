@@ -62,6 +62,6 @@ def timeseries_repr(obj):
     # Prepend with label if present.
     label = obj.get('sf_streamLabel')
     if label:
-        s = '{0}: {1}'.format(label, s)
+        s = u'{0}: {1}'.format(label, s)
 
     return s

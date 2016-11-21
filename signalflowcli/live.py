@@ -16,7 +16,7 @@ from . import utils
 class LiveOutputDisplay(object):
 
     _DATE_FORMAT = '%Y-%m-%d %H:%M:%S %Z%z'
-    _TICKS = [' ', '▁', '▂', '▃', '▅', '▆', '▇']
+    _TICKS = [u' ', u'▁', u'▂', u'▃', u'▅', u'▆', u'▇']
     _LATEST_EVENTS_COUNT = 5
 
     def __init__(self, computation, tz):
@@ -73,7 +73,7 @@ class LiveOutputDisplay(object):
 
         for tsid, spark in self._sparks.items():
             metadata = self._computation.get_metadata(tsid)
-            print('\033[K\r{repr:<60}: [{spark:10s}] '
+            print(u'\033[K\r{repr:<60}: [{spark:10s}] '
                   .format(repr=utils.timeseries_repr(metadata) or '',
                           spark=self._render_spark_line(spark)),
                   end='')
@@ -106,18 +106,18 @@ class LiveOutputDisplay(object):
 
             sources = maybe_json(event.properties.get('inputSources', '{}'))
             sources = ', '.join([
-                '{0}: {1}'.format(white(contexts[k].get('identifier', k)), v)
+                u'{0}: {1}'.format(white(contexts[k].get('identifier', k)), v)
                 for k, v in sources.items()])
 
             values = maybe_json(event.properties.get('inputValues', '{}'))
             values = ', '.join([
-                '{0}={1}'.format(contexts[k].get('identifier', k), v)
+                u'{0}={1}'.format(contexts[k].get('identifier', k), v)
                 for k, v in values.items()])
 
             date = tslib.date_from_utc_ts(event.timestamp_ms)
             is_now = event.properties['is']
 
-            print(' {mark} {date} [{incident}]: {sources} | {values}'
+            print(u' {mark} {date} [{incident}]: {sources} | {values}'
                   .format(mark=green('✓') if is_now == 'ok' else red('✗'),
                           date=white(self._render_date(date), bold=True),
                           incident=event.properties['incidentId'],
