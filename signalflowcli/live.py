@@ -104,24 +104,23 @@ class LiveOutputDisplay(object):
             ets = self._computation.get_metadata(event.tsid)
             contexts = json.loads(ets.get('sf_detectInputContexts', '{}'))
 
-            sources = maybe_json(event.properties.get('inputSources', '{}'))
-            sources = ', '.join([
-                u'{0}: {1}'.format(white(contexts[k].get('identifier', k)), v)
-                for k, v in sources.items()])
-
-            values = maybe_json(event.properties.get('inputValues', '{}'))
-            values = ', '.join([
-                u'{0}={1}'.format(contexts[k].get('identifier', k), v)
+            values = maybe_json(event.properties.get('inputs', '{}'))
+            values = ' | '.join([
+                u'{name} ({key}): {value}'.format(
+                    name=white(contexts[k].get('identifier', k)),
+                    key=','.join([u'{0}:{1}'.format(dim_name, dim_value)
+                                  for dim_name, dim_value
+                                  in v.get('key', {}).items()]),
+                    value=v['value'])
                 for k, v in values.items()])
 
             date = tslib.date_from_utc_ts(event.timestamp_ms)
             is_now = event.properties['is']
 
-            print(u' {mark} {date} [{incident}]: {sources} | {values}'
-                  .format(mark=green('✓') if is_now == 'ok' else red('✗'),
+            print(u' {mark} {date} [{incident}]: {values}'
+                  .format(mark=green(u'✓') if is_now == 'ok' else red(u'✗'),
                           date=white(self._render_date(date), bold=True),
                           incident=event.properties['incidentId'],
-                          sources=sources,
                           values=values))
 
         return 2 + len(self._events)
