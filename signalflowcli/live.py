@@ -71,6 +71,10 @@ class LiveOutputDisplay(object):
             if self._computation.resolution else '-',
             lag=tslib.render_delta_from_now(date)))
 
+        if not len(self._sparks):
+            print('(no data)')
+            return 2
+
         for tsid, spark in self._sparks.items():
             metadata = self._computation.get_metadata(tsid)
             print(u'\033[K\r{repr:<60}: [{spark:10s}] '
