@@ -5,6 +5,6 @@ requests
 prompt_toolkit
 pygments
 pygments-signalflow>=0.3
-signalfx>=1.0.8
+signalfx>=1.0.14
 tslib>=1.5.1
 six>=1.10.0
