@@ -200,7 +200,8 @@ def prompt(flow, tz, params):
             elif output in ['csv', 'graph']:
                 data = csvflow.stream(flow, program, **exec_params)
                 if output == 'csv':
-                    map(print, data)
+                    for line in data:
+                        print(line)
                 elif output == 'graph':
                     graph.render(data, tz)
             else:
@@ -275,7 +276,8 @@ def main():
             else:
                 data = csvflow.stream(flow, program, **params)
                 if options.output == 'csv':
-                    map(print, data)
+                    for line in data:
+                        print(line)
                 elif options.output == 'graph':
                     graph.render(data, options.timezone)
     finally:
