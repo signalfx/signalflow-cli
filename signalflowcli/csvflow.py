@@ -67,7 +67,9 @@ def stream(flow, program, start, stop, resolution, max_delay):
             if not header:
                 header = ['timestamp']
                 header.extend([utils.timeseries_repr(c.get_metadata(tsid))
-                               for tsid in c.get_known_tsids()])
+                               for tsid in c.get_known_tsids()
+                               if c.get_metadata(tsid)['sf_type'] ==
+                               'MetricTimeSeries'])
                 _message('\n')
                 yield _emit(header)
 
@@ -75,7 +77,8 @@ def stream(flow, program, start, stop, resolution, max_delay):
             # change during the stream.
             row = [message.logical_timestamp_ms]
             for tsid in c.get_known_tsids():
-                row.append(message.data.get(tsid, ''))
+                if c.get_metadata(tsid)['sf_type'] == 'MetricTimeSeries':
+                    row.append(message.data.get(tsid, ''))
             yield _emit(row)
     except KeyboardInterrupt:
         pass
