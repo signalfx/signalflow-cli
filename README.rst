@@ -81,7 +81,7 @@ session token. If you want to avoid this everytime you use the client, write
 your session token in `~/.sftoken`. See "Obtaining your token" below for
 details.
 
-After a greeting header, you should see the prompt ``-> ``. You can then enter
+After a greeting header, you should see the prompt ``->``. You can then enter
 a SignalFlow program (even across multiple lines) and press ``<Esc><Enter>`` to
 execute the program and visualize the results. Press ``^C`` at any time to
 interrupt the stream, and again to exit the client.
