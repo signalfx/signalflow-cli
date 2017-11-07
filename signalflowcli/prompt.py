@@ -28,10 +28,27 @@ import tslib
 from . import csvflow, graph, live, utils
 from .tzaction import TimezoneAction
 
+# Set console encoding to UTF-8.
+# First, reload the sys module.
+#   For Python 3.0 - 3.3: use imp
+#   For Python >=3.4: use importlib
+if sys.version_info.major == 2:
+    reload(sys)
+elif sys.version_info.major == 3:
+    if 0 <= sys.version_info.minor <= 3:
+        if globals().get('imp') is None:
+            import imp
+        imp.reload(sys)
+    elif sys.version_info.minor >= 4:
+        if globals().get('importlib') is None:
+            import importlib
+        importlib.reload(sys)
+# Finally, set the console encoding to UTF-8.
+sys.setdefaultencoding('utf-8')
+
 # Default search location for a SignalFx session token file.
 # Used if no token was provided with the --token option.
 _DEFAULT_TOKEN_FILE = '~/.sftoken'
-
 
 class OptionCompleter(prompt_toolkit.completion.Completer):
 
