@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2016 SignalFx, Inc. All Rights Reserved.
+# Copyright (C) 2016-2018 SignalFx, Inc. All Rights Reserved.
 
 """SignalFlow CLI.
 
@@ -9,19 +9,17 @@ An interactive command-line prompt for running real-time streaming SignalFx
 SignalFlow Analytics.
 """
 
-from __future__ import print_function
-
 from ansicolor import red, white
 import argparse
 import getpass
 import os
 import pprint
 import prompt_toolkit
-import prompt_toolkit.contrib.completers
 import pygments
 import pygments_signalflow
 import requests
 import signalfx
+from six.moves import input
 import sys
 import tslib
 
@@ -46,7 +44,7 @@ class OptionCompleter(prompt_toolkit.completion.Completer):
 
 class PromptCompleter(prompt_toolkit.completion.Completer):
 
-    fs_completer = prompt_toolkit.contrib.completers.PathCompleter()
+    fs_completer = prompt_toolkit.completion.filesystem.PathCompleter()
     opt_completer = OptionCompleter()
 
     def _offset(self, document, offset=1):
@@ -67,7 +65,7 @@ def prompt_for_token(api_endpoint):
     print('Please enter your credentials for {0}.'.format(api_endpoint))
     print('To avoid having to login manually, use the --token option.')
     print()
-    email = raw_input('Email: ')
+    email = input('Email: ')
     password = getpass.getpass('Password: ')
     try:
         print()
@@ -149,23 +147,22 @@ def prompt(flow, tz, params):
 
     history = prompt_toolkit.history.FileHistory(
             os.path.expanduser('~/.signalflow.history'))
+    prompt = prompt_toolkit.shortcuts.PromptSession(history=history)
 
     while True:
         program = []
         try:
             prompt_args = {
-                'lexer': prompt_toolkit.layout.lexers.PygmentsLexer(
+                'lexer': prompt_toolkit.lexers.PygmentsLexer(
                     pygments_signalflow.SignalFlowLexer),
-                'history': history,
                 'auto_suggest':
                     prompt_toolkit.auto_suggest.AutoSuggestFromHistory(),
-                'get_continuation_tokens':
+                'prompt_continuation':
                     lambda c, w: [(pygments.token.Token, '>>')],
                 'completer': PromptCompleter(),
                 'multiline': True,
             }
-            program = prompt_toolkit.shortcuts.prompt(
-                    u'-> ', **prompt_args).strip()
+            program = prompt.prompt(u'-> ', **prompt_args).strip()
         except (KeyboardInterrupt, EOFError):
             print()
             break

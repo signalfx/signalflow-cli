@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2016 SignalFx, Inc. All Rights Reserved.
+# Copyright (C) 2016-2018 SignalFx, Inc. All Rights Reserved.
 
 import argparse
 import pytz
