@@ -157,8 +157,7 @@ def prompt(flow, tz, params):
                     pygments_signalflow.SignalFlowLexer),
                 'auto_suggest':
                     prompt_toolkit.auto_suggest.AutoSuggestFromHistory(),
-                'prompt_continuation':
-                    lambda c, w: [(pygments.token.Token, '>>')],
+                'prompt_continuation': lambda w, ln, sw: '>' * (w - 1) + ' ',
                 'completer': PromptCompleter(),
                 'multiline': True,
             }
