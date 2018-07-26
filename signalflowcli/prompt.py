@@ -15,7 +15,6 @@ import getpass
 import os
 import pprint
 import prompt_toolkit
-import pygments
 import pygments_signalflow
 import requests
 import signalfx
@@ -25,6 +24,7 @@ import tslib
 
 from . import csvflow, graph, live, utils
 from .tzaction import TimezoneAction
+from .version import version
 
 # Default search location for a SignalFx session token file.
 # Used if no token was provided with the --token option.
@@ -90,7 +90,7 @@ def find_session_token(options):
     try:
         with open(os.path.expanduser(_DEFAULT_TOKEN_FILE)) as f:
             return f.read().strip()
-    except:
+    except Exception:
         pass
 
     # If we still don't have a token, we need to prompt the user, but only if
@@ -182,7 +182,7 @@ def prompt(flow, tz, params):
             try:
                 with open(filename) as f:
                     program = f.read()
-            except:
+            except Exception:
                 print('Cannot read program from {0}!'.format(filename))
                 continue
             print('Executing program from {0}:'.format(filename))
@@ -211,8 +211,9 @@ def prompt(flow, tz, params):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description='SignalFlow Analytics interactive command-line client')
+    parser = argparse.ArgumentParser(description=(
+        'SignalFlow Analytics interactive command-line client (v{})'
+        .format(version)))
     parser.add_argument('-t', '--token', metavar='TOKEN',
                         help='session token')
     parser.add_argument('-x', '--execute', action='store_true',
