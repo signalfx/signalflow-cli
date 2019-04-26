@@ -6,10 +6,11 @@ allows for executing, controlling and streaming live output from SignalFlow
 Analytics computations, as well as batch non-streaming output.
 
 For more information on the SignalFlow analytics language, visit the SignalFx
-Developers documentation at https://developers.signalfx.com.
+Developers documentation at
+https://developers.signalfx.com/signalflow_analytics/signalflow_overview.html.
 
 Note: The ``signalflow`` CLI is not an officially supported tool. It is
-intended to be an example of how to use the SignalFlow analytics language part 
+intended to be an example of how to use the SignalFlow analytics language part
 of the ``signalfx-python`` library.
 
 Installation
@@ -78,7 +79,7 @@ Interactive mode usage
 
 The client will first ask you to enter your SignalFx credentials to obtain a
 session token. If you want to avoid this everytime you use the client, write
-your session token in `~/.sftoken`. See "Obtaining your token" below for
+your session token in ``~/.sftoken``. See "Obtaining your token" below for
 details.
 
 After a greeting header, you should see the prompt ``->``. You can then enter
@@ -139,10 +140,16 @@ SignalFlow CLI client:
 Obtaining your token
 --------------------
 
-To obtain a session token, simply authenticate against the SignalFx API's
+To obtain a session token, authenticate against the SignalFx API's
 ``/v2/session`` endpoint as described in the API documentation:
-https://developers.signalfx.com/docs/session. Place the value of the
-`sf_accessToken` field in a file named `.sftoken` in your home directory. If
-you don't have this file, or don't use the ``--token`` parameter, the
+https://developers.signalfx.com/sessiontokens_reference.html#tag/Create-Session-Token.
+Place the value of the returned ``accessToken`` field in a file named
+``.sftoken`` in your home directory (most secure). Alternatively, you can pass
+the token through the ``--token`` command-line flag.
+
+If you don't have this file, or don't use the ``--token`` parameter, the
 SignalFlow CLI will prompt for your username and password and obtain a token
 for you.
+
+For more information about tokens, see
+https://developers.signalfx.com/basics/authentication.html.
