@@ -53,7 +53,8 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(
         description='Simple CSV data plotting utility')
-    parser.add_argument('input', nargs='?', type=file, default=sys.stdin,
+    parser.add_argument('input', nargs='?', type=argparse.FileType('r'),
+                        default=sys.stdin,
                         help='read data from file (use \'-\' for stdin)')
     TimezoneAction.add_to_parser(parser)
     options = parser.parse_args()
