@@ -11,7 +11,7 @@ import sys
 from . import utils
 
 
-def stream(flow, program, start, stop, resolution, max_delay):
+def stream(flow, program, start, stop, resolution, max_delay, immediate=False):
     """Execute a SignalFlow computation and output the results as CSV.
 
     :param flow: An open SignalFlow client connection.
@@ -22,6 +22,8 @@ def stream(flow, program, start, stop, resolution, max_delay):
     :param resolution: The desired compute resolution, in milliseconds.
     :param max_delay: The desired maximum data wait, in milliseconds, or None
         for automatic.
+    :param immediate: Whether to offset by max_delay and return immediate
+        results (not always desirable).
     """
 
     buf = six.StringIO()
@@ -41,7 +43,7 @@ def stream(flow, program, start, stop, resolution, max_delay):
         _message('Requesting computation...')
         c = flow.execute(program, start=start, stop=stop,
                          resolution=resolution, max_delay=max_delay,
-                         persistent=False)
+                         immediate=immediate, persistent=False)
     except Exception as e:
         _message('\r\033[K')
         _message(e)

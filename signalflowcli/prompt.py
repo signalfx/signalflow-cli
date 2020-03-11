@@ -236,6 +236,8 @@ def main():
     parser.add_argument('-d', '--max-delay', metavar='MAX-DELAY',
                         default=None,
                         help='maximum data wait (default: auto)')
+    parser.add_argument('-i', '--immediate', action='store_true',
+                        help='immediate results by automatic max delay offset')
     parser.add_argument('--output', choices=['live', 'csv', 'graph'],
                         default='live',
                         help='default output format')
@@ -251,6 +253,7 @@ def main():
         'resolution': options.resolution,
         'max_delay': options.max_delay,
         'output': options.output,
+        'immediate': options.immediate,
     }
 
     # Ensure that we have a session token.

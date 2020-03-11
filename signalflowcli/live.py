@@ -170,7 +170,8 @@ class LiveOutputDisplay(object):
             self._computation.close()
 
 
-def stream(flow, tz, program, start, stop, resolution, max_delay):
+def stream(flow, tz, program, start, stop, resolution, max_delay,
+           immediate=False):
     """Execute a streaming SignalFlow computation and display the results in
     the terminal with live sparklines.
 
@@ -183,12 +184,14 @@ def stream(flow, tz, program, start, stop, resolution, max_delay):
     :param resolution: The desired compute resolution, in milliseconds.
     :param max_delay: The desired maximum data wait, in milliseconds, or None
         for automatic.
+    :param immediate: Whether to offset by max_delay and return immediate
+        results (not always desirable).
     """
     utils.message('Requesting computation... ')
     try:
         c = flow.execute(program, start=start, stop=stop,
                          resolution=resolution, max_delay=max_delay,
-                         persistent=False)
+                         immediate=immediate, persistent=False)
     except signalflow.errors.SignalFlowException as e:
         if not e.message:
             print('failed ({0})!'.format(e.code))
