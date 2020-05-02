@@ -33,7 +33,7 @@ _DEFAULT_TOKEN_FILE = '~/.sftoken'
 
 class OptionCompleter(prompt_toolkit.completion.Completer):
 
-    OPTS = ['start', 'stop', 'resolution', 'max_delay', 'output']
+    OPTS = ['start', 'stop', 'resolution', 'max_delay', 'output', 'immediate']
 
     def get_completions(self, document, complete_event):
         for opt in self.OPTS:
